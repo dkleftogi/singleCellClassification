@@ -21,8 +21,8 @@
 #The data used in this tutorial are only for illustration purposes.
 
 #RUNNING
-#We provide a step-by-step execution example, this is useful for illustration and to reproduce parts of the analysis. 
-#Remember that this is a minimal example. To obtain the input dataplease contact Dimitrios Kleftogiannis.
+#We provide a step-by-step execution example, this is useful for illustration purposes. 
+#Remember that this is a minimal example. To obtain more input data please contact Dimitrios Kleftogiannis.
 
 #DEPENDENCIES
 #To run the tutorial without problem, is required to install the following packages. 
@@ -61,13 +61,13 @@ Myeloid <- b[-part1,]
 Lymphoid <- flowFrame(Lymphoid)
 #modify appropriately the percentiles
 CD3pCD20p <- flowDensity(Lymphoid,channels = c('CD20','CD3'),position = c(T,T),
-                         percentile=c(0.80,0.20),use.percentile=c(T,T))
+                         percentile=c(0.92,0.50),use.percentile=c(T,T))
 CD3pCD20n <- flowDensity(Lymphoid,channels = c('CD20','CD3'),position = c(F,T),
-                         percentile=c(0.85,0.38),use.percentile=c(T,T))
+                         percentile=c(0.88,0.35),use.percentile=c(T,T))
 CD3nCD20p <- flowDensity(Lymphoid,channels = c('CD20','CD3'),position = c(T,F),
-                         percentile=c(0.90,0.38),use.percentile=c(T,T))
+                         percentile=c(0.92,0.35),use.percentile=c(T,T))
 CD3nCD20n <- flowDensity(Lymphoid,channels = c('CD20','CD3'),position = c(F,F),
-                         percentile=c(0.88,0.37),use.percentile=c(T,T))
+                         percentile=c(0.88,0.35),use.percentile=c(T,T))
 
 #generate the gating plot -> 
 myfile<-paste('plot2.pdf')
@@ -80,10 +80,16 @@ dev.off()
 
 #gating for NK cells using CD3 negative and CD20 negative cells
 CD3nCD20n <- getflowFrame(CD3nCD20n)
-NKa2 <- flowDensity(CD3nCD20n,channels = c('CD16','CD56'),position = c(T,T),
-                    percentile=c(0.90,0.74),use.percentile=c(T,T)) 
-NKa4 <- flowDensity(CD3nCD20n,channels = c('CD16','CD56'),position = c(F,T),
-                    percentile=c(0.64,0.74),use.percentile=c(T,T)) 
+
+#a strick way to define NK cells
+NKa1 <- flowDensity(CD3nCD20n,channels = c('CD7','CD56'),position = c(T,T),
+                    percentile=c(0.65,0.7),use.percentile=c(T,T)) 
+
+#a more sophisticated method might use expression of CD16, however in our data didnt work very well
+#NKa2 <- flowDensity(CD3nCD20n,channels = c('CD16','CD56'),position = c(T,T),
+#                    percentile=c(0.90,0.74),use.percentile=c(T,T)) 
+#NKa4 <- flowDensity(CD3nCD20n,channels = c('CD16','CD56'),position = c(F,T),
+#                    percentile=c(0.64,0.74),use.percentile=c(T,T)) 
 
 #produce the third plot
 myfile<-paste('plot3.pdf')
@@ -95,12 +101,9 @@ lines(NKa4@filter,type="l",lwd=2)
 dev.off()
 
 #NK cell identification is not perfect and it requires further improvements
-#here we just merge 3 different subcategories into one; further work is required
-a1 <- getflowFrame(NKa2)
-a3 <- getflowFrame(NKa4)
+a1 <- getflowFrame(NKa1)
 a1 <- a1@exprs
-a3 <- a3@exprs
-tmp <- rbind(a1,a3)
+tmp <- rbind(a1)
 tmp <- flowFrame(tmp)
 NK <- tmp@exprs
 
@@ -115,9 +118,9 @@ CD3pCD20n <- getflowFrame(CD3pCD20n)
 
 #use CD8 and CD4 for further T-cell gating
 CD8posCD4neg <- flowDensity(CD3pCD20n,channels = c('CD8a','CD4'),position = c(T,F),
-                            percentile=c(0.74,0.365),use.percentile=c(T,T)) 
+                            percentile=c(0.72,0.45),use.percentile=c(T,T)) 
 CD8negCD4pos <- flowDensity(CD3pCD20n,channels = c('CD8a','CD4'),position = c(F,T),
-                            percentile=c(0.70,0.42),use.percentile=c(T,T)) 
+                            percentile=c(0.68,0.38),use.percentile=c(T,T)) 
 
 #plot 4: about T-cells
 myfile<-paste('plot4.pdf')
@@ -132,10 +135,10 @@ CD8negCD4pos <- getflowFrame(CD8negCD4pos)
 CD8posCD4neg <- getflowFrame(CD8posCD4neg)
 
 TcellsCytotoxic <- flowDensity(CD8posCD4neg,channels = c('CD8a','CD7'),position = c(T,T),
-                               percentile=c(0.10,0.10),use.percentile=c(T,T)) 
+                               percentile=c(0.05,0.12),use.percentile=c(T,T)) 
 
 TcellsHelper <- flowDensity(CD8negCD4pos,channels = c('CD4','CD7'),position = c(T,T),
-                            percentile=c(0.10,0.10),use.percentile=c(T,T)) 
+                            percentile=c(0.10,0.15),use.percentile=c(T,T)) 
 
 #generate the correspinding plots
 myfile<-paste('plot5.pdf')
@@ -162,11 +165,11 @@ TcellsHelper <- getflowFrame(TcellsHelper)
 #please tune the thresholds to collect sufficient number of cells
 Myeloid <- flowFrame(Myeloid)
 CD34pCD38p <- flowDensity(Myeloid,channels = c('CD34','CD38'),position = c(T,T),
-                          percentile=c(0.99865,0.988),use.percentile=c(T,T))
+                          percentile=c(0.99865,0.95),use.percentile=c(T,T))
 CD34pCD38n <- flowDensity(Myeloid,channels = c('CD34','CD38'),position = c(T,F),
-                          percentile=c(0.9975,0.60),use.percentile=c(T,T))
+                          percentile=c(0.9975,0.70),use.percentile=c(T,T))
 CD34nCD38n <- flowDensity(Myeloid,channels = c('CD34','CD38'),position = c(F,F),
-                          percentile=c(0.95,0.50),use.percentile=c(T,T))
+                          percentile=c(0.95,0.70),use.percentile=c(T,T))
 CD34nCD38p <- flowDensity(Myeloid,channels = c('CD34','CD38'),position = c(F,T),
                           percentile=c(0.95,0.958),use.percentile=c(T,T))
 
@@ -182,15 +185,15 @@ dev.off()
 
 #summarise the myeloid compartements
 CD34pCD38n <- getflowFrame(CD34pCD38n)
-MPP <- CD34pCD38n
+HSC <- CD34pCD38n
 CD34pCD38p <- getflowFrame(CD34pCD38p)
-CMP <- CD34pCD38p
+MPP <- CD34pCD38p
 CD34nCD38n <- getflowFrame(CD34nCD38n)
 CD34nCD38p <- getflowFrame(CD34nCD38p)
 
 #aggregate all myeloid and lymphoid data,take the expression values and provide indicative names to the data frames
-CMP <- CMP@exprs
 MPP <- MPP@exprs
+HSC <- HSC@exprs
 Myeloid_CD34NCD38N <- CD34nCD38n@exprs
 Myeloid_CD34NCD38P <- CD34nCD38p@exprs
 Bcells <- Bcells@exprs
@@ -199,10 +202,10 @@ TcellsHelper <- TcellsHelper@exprs
 #NK is already processed --> no need to add here
 
 #give the labels to the detected cell types
-CMP <- as.data.frame(CMP)
-CMP$Type <- 'CMP'
 MPP <- as.data.frame(MPP)
 MPP$Type <- 'MPP'
+HSC <- as.data.frame(HSC)
+HSC$Type <- 'MPP'
 #CD34-low/CD38-low
 Myeloid_a1 <- as.data.frame(Myeloid_CD34NCD38N)
 Myeloid_a1$Type <- 'Granulocytes'

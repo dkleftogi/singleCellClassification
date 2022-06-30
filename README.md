@@ -1,4 +1,4 @@
-# Single-cell hematopoietic classification and feature engineering using single-cell signaling interactions 
+# Single-cell hematopoietic classification and feature engineering using single-cell DREMI scores 
 
 In this study we used single-cell mass cytometry to characterise normal and leukemic hematopoiesis, using data from leukemia patients and  healthy donors. To annotate reliably single-cells, we profiled healthy donor peripheral blood and bone marrow, and we constructed a reference of hematopoietic cell types. Linear Discriminant Analysis was used to develop a single-cell hematopoietic classifier, and via Transfer Learning single-cells from patients with leukemia were mathced to their nearest healthy cell counterparts. Our analysis characterised the cellular composition of leukemia patients at time of diagnosis, while Machine Learning modeling with Feature Selection identified cell type-specific interactions between signalling rproteins that were associated with survival. 
 
@@ -10,9 +10,9 @@ We provide a bioinformatics pipeline that allows users to:
 
 ## Publication
 
-Title: Machine learning modelling of single-cell signaling interactions identifies predictors of survival in patients with leukemia  
+Title: Identifying predictors of survival in patients with leukemia using machine learning modelling approaches
 
-Journal: The paper is under review in Cell Reports
+Journal: The paper is under review in Cytometry A
 
 Published: pre-print available at bioRxiv 
 

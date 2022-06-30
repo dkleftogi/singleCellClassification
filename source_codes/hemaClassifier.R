@@ -329,6 +329,8 @@ pdf(myfile,onefile = TRUE)
 print(HV_profiles)
 dev.off()
 
+########################################################################################
+
 
 #train a simple LDA classifier and assess the performance using 2-fold cross validation
 #install and use MASS package for that
@@ -355,8 +357,9 @@ a<-predict(model,myTest1)
 prob_matrix<-matrix(0L, nrow = nrow(myTest1), ncol =1)
 prob_matrix<-as.matrix(apply(a$posterior,1,max))
 DR<-data.frame(myTest1,Previous=as.factor(myLabels),New=a$class,Prob=prob_matrix)
-#filter based on probability - we used 0.85 but this can be changed accordingly
-#estimate the number of "rejected cells"
+
+#filter based on probability - here we used 0.85 but this can be changed accordingly. In the paper this optimisation was skipped
+#estimate the number of "rejected cells" - it is a good idea to investigate the rejected cells with clustering
 rejectedCells <- which(DR$Prob<0.85)
 #filter out the rejected cells
 DR <- DR[-rejectedCells,]
@@ -493,6 +496,153 @@ tmp <- HD_annotated[,c('Type',selectedMarkers)]
 #this model can be used for transfer-learning using data from leukemia patients
 model <- lda(Type~.,data=na.omit(tmp))
 
+
+#############################################################
+#train a simple ΚΝΝ classifier and assess the performance using 2-fold cross validation
+
+#how many cells we have, split into half
+myCells <- nrow(HD_annotated)
+myprop <- round(0.5*myCells)
+#shuffle the cells
+a <- sample(nrow(HD_annotated))
+#take the first half of it for training, the rest remaining for testing
+a_select <- a[1:myprop]
+training <- HD_annotated[a_select,]
+a_select <-a[(myprop+1):length(a)]
+testing <- HD_annotated[a_select,]
+
+#develop a model using the high quality data of this iteration
+
+#projection based on k-nn
+data <- training[,1:16]
+dataLabels <- training$Type
+dataLabels <- as.character(dataLabels)
+
+query <- testing[,1:16]
+queryLabels <- testing$Type
+queryLabels <- as.character(queryLabels)
+
+res <- FNN::knn(data, query, dataLabels, k=5,algorithm=c("kd_tree"),prob=TRUE)
+
+enseRes <- data.frame(KNNProb=attr(res,"prob"))
+enseRes$RealLabel <- queryLabels
+enseRes$KNNpred <- as.character(res)
+
+clusters <- unique(enseRes$RealLabel)
+performance <- data.frame()
+pf1 <- list()
+myC <- 1
+for(idx in clusters){
+  
+  a <- which(enseRes$KNNpred==idx)
+  tmp <- enseRes[a,]
+  Nj <- nrow(tmp)
+  predicted_res <- table(tmp$RealLabel)
+  plot_data <- data.frame(ClusterSize=nrow(tmp),t(predicted_res))
+  colnames(plot_data)[2] <- idx
+  colnames(plot_data)[3] <- 'PredictedCellType'
+  plot_data$Freq <- 100*plot_data$Freq/nrow(tmp)
+  str <- paste('Gated cell type: ',idx,sep='')
+  pf1[[myC]] <- ggplot(plot_data, aes(x=PredictedCellType,y=Freq,size=Freq,color=PredictedCellType))+
+    geom_point(alpha=0.5)+
+    geom_linerange(aes(x=PredictedCellType, ymin=0, ymax=Freq),size=1)+
+    theme_classic()+
+    theme(legend.position = "none",
+          axis.text.x = element_text(angle=45, hjust=1,size = 10),
+          axis.text.y = element_text(hjust=1,size = 10),
+          axis.title.x = element_blank(),
+          axis.title.y = element_blank(),
+          plot.title = element_text(size=10),aspect.ratio = 0.5)+ ylim(0,100)+
+    ggtitle(str)+scale_colour_brewer(palette = "Set2")
+  myName <- which.max(table(tmp$RealLabel))
+  s1 <- which(names(table(tmp$RealLabel))==idx)
+  Nij <- table(tmp$RealLabel)[s1]
+  predictedName <- idx
+  a <- which(enseRes$RealLabel==predictedName)
+  tmp <- enseRes[a,]
+  Ni <- nrow(tmp)
+  df <- data.frame(CellType=paste(idx,sep=''),PredictedCellType=predictedName,
+                   Recall=Nij/Ni,
+                   Precision=Nij/Nj,
+                   F1=2*(Nij/Ni)*(Nij/Nj)/((Nij/Ni)+(Nij/Nj)))
+  performance <- rbind(performance,df)
+  myC <- myC + 1
+}
+
+#FOLD 2: train using the previous testing data
+#projection based on k-nn
+data <- testing[,1:16]
+dataLabels <- testing$Type 
+dataLabels <- as.character(dataLabels)
+
+query <-  training[,1:16]
+queryLabels <- training$Type
+queryLabels <- as.character(queryLabels)
+
+res <- FNN::knn(data, query, dataLabels, k=5,algorithm=c("kd_tree"),prob=TRUE)
+
+enseRes <- data.frame(KNNProb=attr(res,"prob"))
+enseRes$RealLabel <- queryLabels
+enseRes$KNNpred <- as.character(res)
+
+clusters <- unique(enseRes$RealLabel)
+
+pf2 <- list()
+myC <- 1
+for(idx in clusters){
+  
+  a <- which(enseRes$KNNpred==idx)
+  tmp <- enseRes[a,]
+  Nj <- nrow(tmp)
+  predicted_res <- table(tmp$RealLabel)
+  plot_data <- data.frame(ClusterSize=nrow(tmp),t(predicted_res))
+  colnames(plot_data)[2] <- idx
+  colnames(plot_data)[3] <- 'PredictedCellType'
+  plot_data$Freq <- 100*plot_data$Freq/nrow(tmp)
+  str <- paste('Gated cell type: ',idx,sep='')
+  pf2[[myC]] <- ggplot(plot_data, aes(x=PredictedCellType,y=Freq,size=Freq,color=PredictedCellType))+
+    geom_point(alpha=0.5)+
+    geom_linerange(aes(x=PredictedCellType, ymin=0, ymax=Freq),size=1)+
+    theme_classic()+
+    theme(legend.position = "none",
+          axis.text.x = element_text(angle=45, hjust=1,size = 10),
+          axis.text.y = element_text(hjust=1,size = 10),
+          axis.title.x = element_blank(),
+          axis.title.y = element_blank(),
+          plot.title = element_text(size=10),aspect.ratio = 0.5)+ ylim(0,100)+
+    ggtitle(str)+scale_colour_brewer(palette = "Set2")
+  myName <- which.max(table(tmp$RealLabel))
+  s1 <- which(names(table(tmp$RealLabel))==idx)
+  Nij <- table(tmp$RealLabel)[s1]
+  predictedName <- idx
+  a <- which(enseRes$RealLabel==predictedName)
+  tmp <- enseRes[a,]
+  Ni <- nrow(tmp)
+  df <- data.frame(CellType=paste(idx,sep=''),PredictedCellType=predictedName,
+                   Recall=Nij/Ni,
+                   Precision=Nij/Nj,
+                   F1=2*(Nij/Ni)*(Nij/Nj)/((Nij/Ni)+(Nij/Nj)))
+  performance <- rbind(performance,df)
+  myC <- myC + 1
+}
+
+
+#save cell misclassification plots for fold 1 and fold 2 
+#cell type classification performance can be found in performance_fold1 and performance_fold2 data frames
+combined_plot_f1 <- ggarrange(pf1[[1]],pf1[[2]],pf1[[3]],pf1[[4]],pf1[[5]],pf1[[6]],pf1[[7]],pf1[[8]],
+                              nrow=3,ncol=3)
+myfile<-paste('plot15_f3.pdf')
+pdf(myfile,onefile = TRUE)
+print(combined_plot_f1)
+dev.off()
+
+combined_plot_f2 <- ggarrange(pf2[[1]],pf2[[2]],pf2[[3]],pf2[[4]],pf2[[5]],pf2[[6]],pf2[[7]],pf2[[8]],
+                              nrow=3,ncol=3)
+myfile<-paste('plot15_f4.pdf')
+pdf(myfile,onefile = TRUE)
+print(combined_plot_f2)
+dev.off()
+
 #load "toy" data from leukemia patients with ~1M cells from 6 patients
 load('leukemiaData.Rdata')
 
@@ -589,7 +739,16 @@ selectedMarkers <- c('CD45','CD33','CD38','CD34','CD123','CD20','CD3','CD8a','CD
 #for the annotation part we use subset of the original data frame
 surfaceMarkerExpr <-leukemiaData[,selectedMarkers]
 
-#predict the class
+#predict the class, here we show an example using the developed LDA model because it is fast
+#to use KNN model un-comment the following chunk of code, takes ~40 min in a commodity computer
+#data <- HD_annotated[,1:16]
+#dataLabels <- HD_annotated$Type
+#dataLabels <- as.character(dataLabels)
+#query <- surfaceMarkerExpr
+#res <- FNN::knn(data, query, dataLabels, k=5,algorithm=c("kd_tree"),prob=TRUE)
+#enseRes <- data.frame(KNNProb=attr(res,"prob"))
+#enseRes$KNNpred <- as.character(res)
+
 predicted_class <- predict(model,surfaceMarkerExpr)
 #estimate the posterior probabilities
 prob_matrix<-matrix(0L, nrow = nrow(tumor_expr), ncol =1)

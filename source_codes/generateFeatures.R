@@ -88,8 +88,8 @@ for(myClass in CellTypes){
       featVector  <- matrix(-1,nrow = 1,ncol=length(myFeat))
       
     }else{
-      #select a smaller random subset of cells to speedup, if we have more than 50000 cells per cell type.
-      #this can be tuned by user
+      #select a smaller random subset of cells to speedup, if we have more than 50000 cells per cell type takes long time...
+      #this can be tuned by user based on the available data and computing power
       if(nrow(patientData)>50000){
         a <- sample(nrow(patientData))
         asel <- a[1:Ncells]
