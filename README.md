@@ -10,11 +10,11 @@ We provide a bioinformatics pipeline that allows users to:
 
 ## Publication
 
-Title: Identifying predictors of survival in patients with leukemia using machine learning modelling approaches
+Title: Identifying predictors of survival in patients with leukemia using single-cell mass cytometry and machine learning
 
-Journal: The paper is under review in Cytometry A
+Journal: The paper is submitted to Cell Reports Methods
 
-Published: pre-print available at bioRxiv 
+Published: pre-print available at bioRxiv https://doi.org/10.1101/2022.08.13.503587
 
 ## Dependencies and System Requirements
 
